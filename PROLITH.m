@@ -1,12 +1,9 @@
-%--------------------------------%
+%----------------------------------------------------------%
 %File name: PROLITH.m
-%Author: Zac Levinson
-%Email: zal2186@rit.edu
 %
 %Description:
-%Object oriented interface with
-%PROLITH lithography simulator
-%--------------------------------%
+%Object oriented wrapper for PROLITH lithography simulator
+%----------------------------------------------------------%
 
 classdef PROLITH
    %Used to establish and control connections to PROLITH via ActiveX server
@@ -71,7 +68,9 @@ classdef PROLITH
     end
     
     function summary = get_summary(self)
-       summary = self.sim_engine.GetParameterSummaryString(); 
+		%get_summary()
+		%Returns all PROLITH settings as a string
+        summary = self.sim_engine.GetParameterSummaryString(); 
     end
     
     function self = getLowLevelObjects(self)
@@ -96,29 +95,46 @@ classdef PROLITH
     end
     
     function self = new_file(self, path)
+		%new_file(path)
+		%Create a new PROLITH document at the specified path.
         self.document = self.document.New();
         self = self.getLowLevelObjects();
     end
     
     function self = open_file(self, path)
+		%open_file(path)
+		%Open the PROLITH document at the specified path.
         self.document = self.document.get('Open', path);            
         self = self.getLowLevelObjects();
     end
     
     function self = close_file(self)
+		%close_file()
+		%Closes the current PROLITH document.
         self.document.Close();
         self = self.getLowLevelObjects();
     end
     
     function self = import(self,varargin)
+		%import(path, overwrite)
+		%Imports a file at path into the PROLITH database.
+		%
+		%overwrite - bool (optional: defaults to false)
+		%Specifies whether or not existing database entries should be overwritten
+		
         if numel(varargin) < 2
             self.database.Import(varargin{1},0);
+		elseif ~varargin{2}
+			self.database.Import(varargin{1},0);
         else
             self.database.Import(varargin{1},1);
         end
     end
     
-    function rotate_mask(self)
+    function rotate_mask(self)		
+		%rotate_mask()
+		%Rotate the current mask from the current state
+		
         if self.mask.IsRotated
             self.mask.IsRotated = false; 
         else
@@ -127,6 +143,19 @@ classdef PROLITH
     end
    
     function self = set_source(self, varargin)
+		%Set illuminator source shape
+		%
+		%Shape Name - String
+		%Accepted values:
+		%	-conventional
+		%	-dipole
+		%	-annular
+		%	-quadrupole
+		%	-Database source
+		%
+		%Dipole requires 'x' or 'y' orientation to be specified
+		%Quadrupole requires 45 or 90 degree orientation to be specified
+		
         if strcmp(lower(varargin{1}),'conventional')
             self.img_system.LoadParametricSource(10);
         elseif strcmp(lower(varargin{1}),'dipole')
@@ -154,6 +183,13 @@ classdef PROLITH
     end
     
     function self = set_source_coherence(self, varargin)
+		%Set the coherence of the current source.
+		%
+		%If source is a conventional partially coherent source, you must specify the degree of partial coherence (sigma)
+		%If source is a dipole, you must specify the center and radius
+		%If source is an annulus, you must supply the outer radius and inner radius		
+		%If source is a quadrupole, you must supply the center and radius
+		
         source = self.img_system.GetSource();
         source_type = lower(source.Name);
         
@@ -163,8 +199,19 @@ classdef PROLITH
             source.get('Center').set('Value', varargin{1});
             source.get('Radius').set('Value', varargin{2});
         elseif strcmp(source_type,'annular')
-            source.get('OuterRadius').set('Value', varargin{1});
-            source.get('InnerRadius').set('Value', varargin{2});
+			%We have to make sure that the inner radius is always less than the outer
+			%so the values have to be set in the correct order
+			
+			inner_radius = source.get('InnerRadius');
+			outer_radius = source.get('OuterRadius');
+			
+			if inner_radius.get('Value') > varargin{1}
+				outer_radius.set('Value', varargin{1});
+				inner_radius.set('Value', varargin{2});			
+			else
+				inner_radius.set('Value', varargin{2});							
+				outer_radius.set('Value', varargin{1});
+			end
         elseif strcmp(source_type,'quadrupole')
             source.get('Center').set('Value', varargin{1});
             source.get('Radius').set('Value', varargin{2});
@@ -172,29 +219,55 @@ classdef PROLITH
     end
     
     function set_target_cd(self, metro_plane, target)
+		%set_target_cd(metro_plane, target)
+		%Set the target CD for metrology plane, metro_plane, to target.
+		
         self.sim_engine.SetMetrologyPlaneLithoTargetCD(metro_plane, target);
     end
 
     function add_aberration(self,index, value)
-        %Add aberration to imaging system  
+		%add_aberration(index, value)
+        %Add Zernike aberration to imaging system  
         self.aberration.get('Coefficient', index).set('Value', value);
     end
     
     function add_set_aberration(self,index, values)
-        %Add aberration to simulation set
+		%add_set_aberration(index, values)
+        %Add Zernike aberration to simulation set
+		%
+		%values - vector
+		%Specifies the desired start, stop, and step values for the simulation set
         ID = self.aberration.get('Coefficient', index).get('ID');
         self.add_set_input(ID, values);
     end
 
     function add_set_input(self, ID, values)
+		%add_set_input(ID, values)
+		%Add an input to a simulation set.
+		%
+		%ID - integer
+		%PROLITH input ID for desired input
+		%
+		%values - vector
+		%Specifies the desired start, stop, and step values for the simulation set
+		
        self.sim_engine.AddInput(ID, values(1), values(2), values(3), 0);
     end
     
     function add_output(self, ID)
+		%add_output(ID)
+		%Add an output to a simulation set
+		%
+		%ID - integer
+		%PROLITH output ID for desired output
+		
         self.sim_engine.AddOutput(ID);
     end
 
     function self = clear_inputs(self)
+		%clear_inputs()
+		%Remove all inputs from simulation set
+		
         try
             self.sim_engine.RemoveAllInputs(); 
         catch err
@@ -205,7 +278,10 @@ classdef PROLITH
         end            
     end
     
-    function self = clear_outputs(self)        
+    function self = clear_outputs(self)  
+		%clear_outputs()
+		%Remove all outputs from simulation set
+		
         try     
             self.sim_engine.RemoveAllOutputs();   
         catch err
@@ -217,7 +293,9 @@ classdef PROLITH
     end
     
     function self = run_async(self)
+		%run_async()
         %Run simulation asynchronously
+		
         try
             self.sim_engine.SimulationRun();
         catch Exception                        
@@ -229,6 +307,9 @@ classdef PROLITH
     end
 
     function self = run(self)
+		%run()
+		%Run simulation syncronously
+		
         try
             self.sim_engine.RunSimSet();
         catch Exception                        
@@ -239,19 +320,26 @@ classdef PROLITH
         end
     end
     
-    function data = get_data(self, metroPlane, output)
-        %gets data from PROLITH simulation
+    function data = get_data(self, metro_plane, ID)
+		%data = get_data(metro_plane, ID)
+        %Returns data from the last run simulation
+		%
+		%metro_plane - string
+		%Name of metrology plane
+		%
+		%ID - integer
+		%PROLITH output ID for desired output 
         
-        numSim = self.sim_engine.NumResultsRecords;
+        num_sim = self.sim_engine.NumResultsRecords;
 
-        if numSim > 0
-            data = zeros(numSim-1,1);
+        if num_sim > 0
+            data = zeros(num_sim-1,1);
             
-            for i=0:numSim-1
-                data(i+1) = self.sim_engine.GetMetrologyPlaneSimSetResult(metroPlane, output, i);
+            for i=0:num_sim-1
+                data(i+1) = self.sim_engine.GetMetrologyPlaneSimSetResult(metro_plane, ID, i);
             end
         else
-            data = self.sim_engine.GetMetrologyPlaneSingleRunResult(metroPlane, output);
+            data = self.sim_engine.GetMetrologyPlaneSingleRunResult(metro_plane, ID);
         end
     end
    
