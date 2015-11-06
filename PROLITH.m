@@ -1,87 +1,107 @@
-%----------------------------------------------------------%
-%File name: PROLITH.m
-%
-%Description:
-%Object oriented wrapper for PROLITH lithography simulator
-%----------------------------------------------------------%
+% ----------------------------------------------------------% 
+% File name: PROLITH.m
+% 
+% Description:
+% Object oriented wrapper for PROLITH lithography simulator
+% ----------------------------------------------------------% 
 
 classdef PROLITH
-   %Used to establish and control connections to PROLITH via ActiveX server
+   % Used to establish and control connections to PROLITH via ActiveX server
    
    properties
-       status;              %Status of ActiveX server
-       server='';           %IP address of remote server to open ActiveX sever
+       status;              % Status of ActiveX server
+       server='';           % IP address of remote server to open ActiveX sever
        
-       application;         %PROLITH application object
-       document;            %PROLITH document object
+       application;         % PROLITH application object
+       document;            % PROLITH document object
        database;       
 
-       sim_engine;          %PROLITH simulation object
+       sim_engine;          % PROLITH simulation object
        grid;
        waferProcessStack;
-       mask;                %PROLITH mask object
-       img_system;          %PROLITH imagining system object
-       aberration;          %PROLITH aberration object
+       mask;                % PROLITH mask object
+       img_system;          % PROLITH imagining system object
+       aberration;          % PROLITH aberration object
 
        final_step;
        
-       focus = struct('id', 29102, 'value', 0.0);
-       wavelength = struct('id', 29139, 'value', 0.0);
-       threshold = struct('id', 29116, 'value', 0.0);
+       focus = PPI_input(29102, @get_focus);
+       wavelength = PPI_input(29139, @get_wavelength);
+       NA = PPI_input(29105, @get_NA);
+       CRAO = PPI_input(31319, @get_CRAO);
+       reduction = PPI_input(29141, @get_reduction);
+       threshold = PPI_input(29116, @() NaN);
+       feature_width = PPI_input(29996, @get_feature_width);
+       pitch = PPI_input(30001, @get_pitch);
+       source_radius = PPI_input(29106, @() NaN);
+       target_cd;
+       pupil_filter;
        mask_rotation;
+       metrology_planes;
+       sim_region;
    end
    
    properties (Constant)
        aerial_image = struct('contrast',14, ...
                              'cd', 17, ...
                              'placement_error', 18, ...
-                             'intensity', 43);
+                             'intensity', 43, ...
+                             'nils', struct('right', 140, 'left', 141, 'avg', 142), ...
+                             'threshold', 29116);           
+        diffraction = struct('amplitude', struct('xx', 49, 'xy', 50, 'yx', 51, 'yy', 52, 'kirch', 57), ...
+                             'phase', struct('xx', 53, 'xy', 54, 'yx', 55, 'yy', 56, 'kirch', 58)); 
    end
    
    methods
     function self = PROLITH(varargin)
-        %class constructor
+        % class constructor
         
-        %parse variable arguments:
-        %server - server to run PROLITH
-        if (numel(varargin)>0)
-            ind = findStr('server', varargin{1});
-            self.server = varargin{2}(ind);            
-            self.server = char(self.server);
+        % parse variable arguments:
+        % server - server to run PROLITH
+        if ~isempty(varargin)
+            self.server = varargin{1};
         end
+
+        self = self.open();
     end
     
     function self = open(self)
-        %opens ActiveX PROLITH link
+        % opens ActiveX PROLITH link
         
-        %set object status
+        % set object status
         self.status = 'OPEN';
         
-        %connect to PROLITH
+        % connect to PROLITH
         if ~isempty(self.server)
-            self.application = actxserver('Prolith.Application', self.server.address);
+            self.application = actxserver('Prolith.Application', self.server);
         else
             self.application = actxserver('Prolith.Application');
         end
         
         self = self.getLowLevelObjects();
+
+        assignin('caller', inputname(1), self)
     end
     
     function summary = get_summary(self)
-		%get_summary()
-		%Returns all PROLITH settings as a string
+        % get_summary()
+        % Returns all PROLITH settings as a string
         summary = self.sim_engine.GetParameterSummaryString(); 
     end
     
     function self = getLowLevelObjects(self)
+        global img_system
+        global sim_engine
+        global mask
+
         self.document = self.application.ActiveDocument;   
         self.database = self.application.Database;
         self.sim_engine = self.document.SimulationEngine;
         
-        %instantiate image system object
+        % instantiate image system object
         self.img_system = self.document.GetImagingSystem(1);
         
-        %Load Zernike COMA_05 aberration and instantiate aberration object
+        % Load Zernike COMA_05 aberration and instantiate aberration object
         self.img_system.LoadDatabaseAberration('COMA_05', 1);
         self.aberration = self.img_system.GetAberration();   
         self.aberration.get('Coefficient', 7).set('Value', 0);
@@ -89,73 +109,106 @@ classdef PROLITH
         self.mask = self.document.GetMask(1);
         self.grid = self.document.GetGridSize();
         
-        %Remove simulation set inputs and outputs
+        % Remove simulation set inputs and outputs
         self.clear_inputs();
         self.clear_outputs();
+
+        img_system = self.img_system;
+        mask = self.mask;
+        sim_engine = self.sim_engine;
+
+        assignin('caller', inputname(1), self)
     end
     
     function self = new_file(self, path)
-		%new_file(path)
-		%Create a new PROLITH document at the specified path.
+        % new_file(path)
+        % Create a new PROLITH document at the specified path.
         self.document = self.document.New();
         self = self.getLowLevelObjects();
+
+        assignin('caller', inputname(1), self)
     end
     
     function self = open_file(self, path)
-		%open_file(path)
-		%Open the PROLITH document at the specified path.
-        self.document = self.document.get('Open', path);            
-        self = self.getLowLevelObjects();
+        % open_file(path)
+        % Open the PROLITH document at the specified path.
+        if ~strcmp(self.document.path, path)
+            self.document = self.document.get('Open', path);            
+            self = self.getLowLevelObjects();
+        end
+
+        assignin('caller', inputname(1), self)
     end
     
     function self = close_file(self)
-		%close_file()
-		%Closes the current PROLITH document.
+        % close_file()
+        % Closes the current PROLITH document.
         self.document.Close();
         self = self.getLowLevelObjects();
+        
+        assignin('caller', inputname(1), self)
     end
     
     function self = import(self,varargin)
-		%import(path, overwrite)
-		%Imports a file at path into the PROLITH database.
-		%
-		%overwrite - bool (optional: defaults to false)
-		%Specifies whether or not existing database entries should be overwritten
-		
+        % import(path, overwrite)
+        % Imports a file at path into the PROLITH database.
+        % 
+        % overwrite - bool (optional: defaults to false)
+        % Specifies whether or not existing database entries should be overwritten
+        
         if numel(varargin) < 2
             self.database.Import(varargin{1},0);
-		elseif ~varargin{2}
-			self.database.Import(varargin{1},0);
+        elseif ~varargin{2}
+            self.database.Import(varargin{1},0);
         else
             self.database.Import(varargin{1},1);
         end
+        self = self.getLowLevelObjects();
+        
+        assignin('caller', inputname(1), self)
     end
     
-    function rotate_mask(self)		
-		%rotate_mask()
-		%Rotate the current mask from the current state
-		
+    function rotate_mask(self)      
+        % rotate_mask()
+        % Rotate the current mask from the current state
+        
         if self.mask.IsRotated
             self.mask.IsRotated = false; 
         else
             self.mask.IsRotated = true;
         end
     end
+
+    function value = best_focus(self)
+        % best_focus()
+        % Get best focus from simulation set analysis tab
+        % Note: must run appropriate simulation set for this
+        % to be valid.
+        value = self.sim_engine.get('BestFocus');
+    end
+
+    function value = depth_of_focus(self)
+        % depth_of_focus()
+        % Get depth of focus from simulation set analysis tab
+        % Note: must run appropriate simulation set for this
+        % to be valid.
+        value = self.sim_engine.get('DepthOfFocus');
+    end
    
     function self = set_source(self, varargin)
-		%Set illuminator source shape
-		%
-		%Shape Name - String
-		%Accepted values:
-		%	-conventional
-		%	-dipole
-		%	-annular
-		%	-quadrupole
-		%	-Database source
-		%
-		%Dipole requires 'x' or 'y' orientation to be specified
-		%Quadrupole requires 45 or 90 degree orientation to be specified
-		
+        % Set illuminator source shape
+        % 
+        % Shape Name - String
+        % Accepted values:
+        %   -conventional
+        %   -dipole
+        %   -annular
+        %   -quadrupole
+        %   -Database source
+        % 
+        % Dipole requires 'x' or 'y' orientation to be specified
+        % Quadrupole requires 45 or 90 degree orientation to be specified
+        
         if strcmp(lower(varargin{1}),'conventional')
             self.img_system.LoadParametricSource(10);
         elseif strcmp(lower(varargin{1}),'dipole')
@@ -180,16 +233,18 @@ classdef PROLITH
                 disp(exception.message);
            end 
         end
+        
+        assignin('caller', inputname(1), self)
     end
     
     function self = set_source_coherence(self, varargin)
-		%Set the coherence of the current source.
-		%
-		%If source is a conventional partially coherent source, you must specify the degree of partial coherence (sigma)
-		%If source is a dipole, you must specify the center and radius
-		%If source is an annulus, you must supply the outer radius and inner radius		
-		%If source is a quadrupole, you must supply the center and radius
-		
+        % Set the coherence of the current source.
+        % 
+        % If source is a conventional partially coherent source, you must specify the degree of partial coherence (sigma)
+        % If source is a dipole, you must specify the center and radius
+        % If source is an annulus, you must supply the outer radius and inner radius        
+        % If source is a quadrupole, you must supply the center and radius
+        
         source = self.img_system.GetSource();
         source_type = lower(source.Name);
         
@@ -199,75 +254,142 @@ classdef PROLITH
             source.get('Center').set('Value', varargin{1});
             source.get('Radius').set('Value', varargin{2});
         elseif strcmp(source_type,'annular')
-			%We have to make sure that the inner radius is always less than the outer
-			%so the values have to be set in the correct order
-			
-			inner_radius = source.get('InnerRadius');
-			outer_radius = source.get('OuterRadius');
-			
-			if inner_radius.get('Value') > varargin{1}
-				outer_radius.set('Value', varargin{1});
-				inner_radius.set('Value', varargin{2});			
-			else
-				inner_radius.set('Value', varargin{2});							
-				outer_radius.set('Value', varargin{1});
-			end
+            % We have to make sure that the inner radius is always less than the outer
+            % so the values have to be set in the correct order
+            
+            inner_radius = source.get('InnerRadius');
+            outer_radius = source.get('OuterRadius');
+            
+            if inner_radius.get('Value') > varargin{1}
+                outer_radius.set('Value', varargin{1});
+                inner_radius.set('Value', varargin{2});         
+            else
+                inner_radius.set('Value', varargin{2});                         
+                outer_radius.set('Value', varargin{1});
+            end
         elseif strcmp(source_type,'quadrupole')
             source.get('Center').set('Value', varargin{1});
             source.get('Radius').set('Value', varargin{2});
         end
+        
+        assignin('caller', inputname(1), self)
+    end
+
+    function load_mask(self, mask_name, varargin)
+        % load_mask(self, mask_name, varargin)
+        % Load mask from PROLITH database
+        %
+        % Optional arguments
+        % pass_num - integer 1 through 5
+        % dims - mask dimensions (integer, 2 or 3)
+        % load_sim_region - boolean
+        % load_cse - boolean
+
+        p = inputParser;
+        addOptional(p,'pass_num',1,@(v) isinteger(v) && v>=1 && v<=5);
+        addOptional(p,'dims',2,@(v) v==2 || v==3);
+        addOptional(p,'load_sim_region',true, @islogical);
+        addOptional(p,'load_cse',true, @islogical);
+
+        parse(p, varargin{:});
+        args = p.Results;
+
+        self.sim_engine.LoadDatabaseMask(args.pass_num, args.dims-2, mask_name, args.load_sim_region, args.load_cse);
     end
     
     function set_target_cd(self, metro_plane, target)
-		%set_target_cd(metro_plane, target)
-		%Set the target CD for metrology plane, metro_plane, to target.
-		
+        % set_target_cd(metro_plane, target)
+        % Set the target CD for metrology plane, metro_plane, to target.
+        
         self.sim_engine.SetMetrologyPlaneLithoTargetCD(metro_plane, target);
     end
 
     function add_aberration(self,index, value)
-		%add_aberration(index, value)
-        %Add Zernike aberration to imaging system  
+        % add_aberration(index, value)
+        % Add Zernike aberration to imaging system  
         self.aberration.get('Coefficient', index).set('Value', value);
     end
     
     function add_set_aberration(self,index, values)
-		%add_set_aberration(index, values)
-        %Add Zernike aberration to simulation set
-		%
-		%values - vector
-		%Specifies the desired start, stop, and step values for the simulation set
+        % add_set_aberration(index, values)
+        % Add Zernike aberration to simulation set
+        % 
+        % values - vector
+        % Specifies the desired start, stop, and step values for the simulation set
+        self.aberration.get('Coefficient', index).set('Value', 0);
         ID = self.aberration.get('Coefficient', index).get('ID');
         self.add_set_input(ID, values);
     end
 
-    function add_set_input(self, ID, values)
-		%add_set_input(ID, values)
-		%Add an input to a simulation set.
-		%
-		%ID - integer
-		%PROLITH input ID for desired input
-		%
-		%values - vector
-		%Specifies the desired start, stop, and step values for the simulation set
-		
-       self.sim_engine.AddInput(ID, values(1), values(2), values(3), 0);
+    function add_input(self, sim_input, values)
+        % add_set_input(sim_input, values)
+        % Add an input to a simulation set.
+        % 
+        % sim_input - integer
+        % PROLITH input for desired input
+        % 
+        % values - vector
+        % Specifies the desired start, stop, and step values for the simulation set
+        
+
+        if strcmp(class(sim_input), 'PPI_input')
+            self.sim_engine.AddInput(sim_input.id, values(1), values(2), values(3), 0);     
+        else
+            self.sim_engine.AddInput(sim_input, values(1), values(2), values(3), 0);
+        end      
+    end
+
+    function add_set_input(self, sim_input, values)
+        % This function is depricated! Please use add_input(sim_input, values) instead.
+        %
+        % add_set_input(sim_input, values)
+        % Add an input to a simulation set.
+        % 
+        % sim_input - integer
+        % PROLITH input for desired input
+        % 
+        % values - vector
+        % Specifies the desired start, stop, and step values for the simulation set
+        
+        if strcmp(class(sim_input), 'PPI_input')
+            self.add_input(sim_input.id, values)
+        else
+            self.add_input(sim_input, values)
+        end
     end
     
-    function add_output(self, ID)
-		%add_output(ID)
-		%Add an output to a simulation set
-		%
-		%ID - integer
-		%PROLITH output ID for desired output
-		
-        self.sim_engine.AddOutput(ID);
+    function id = target_cd_id(self, metro_plane)
+        % target_cd_id(metro_plane)
+        % Get input ID from target CD from specified metrology plane
+
+        metro_planes = self.document.GetMetrologyPlanes();
+        plane = metro_planes.GetMetrologyPlane(metro_plane);
+        id = plane.LithoTargetCD.ID;
+    end
+
+    function couple_inputs(self, input_id, coupled_id)
+        % couple_inputs(input_id, coupled_id)
+        % Couple two simulation set inputs
+
+        if strcmp(class(input_id), 'PPI_input'), input_id = input_id.id; end
+        if strcmp(class(coupled_id), 'PPI_input'), coupled_id = coupled_id.id; end
+        self.sim_engine.SetInputCoupledID(input_id, coupled_id);
+    end
+    
+    function add_output(self, output)
+        % add_output(ID)
+        % Add an output to a simulation set
+        % 
+        % output - integer
+        % PROLITH output ID for desired output
+        
+        self.sim_engine.AddOutput(output);
     end
 
     function self = clear_inputs(self)
-		%clear_inputs()
-		%Remove all inputs from simulation set
-		
+        % clear_inputs()
+        % Remove all inputs from simulation set
+        
         try
             self.sim_engine.RemoveAllInputs(); 
         catch err
@@ -275,13 +397,15 @@ classdef PROLITH
             self = self.close();
             self = self.open();
             self = clear_inputs(self);
-        end            
+        end
+        
+        assignin('caller', inputname(1), self)    
     end
     
     function self = clear_outputs(self)  
-		%clear_outputs()
-		%Remove all outputs from simulation set
-		
+        % clear_outputs()
+        % Remove all outputs from simulation set
+        
         try     
             self.sim_engine.RemoveAllOutputs();   
         catch err
@@ -290,12 +414,14 @@ classdef PROLITH
             self = self.open();
             self = clear_outputs(self);
         end
+        
+        assignin('caller', inputname(1), self)
     end
     
     function self = run_async(self)
-		%run_async()
-        %Run simulation asynchronously
-		
+        % run_async()
+        % Run simulation asynchronously
+        
         try
             self.sim_engine.SimulationRun();
         catch Exception                        
@@ -304,75 +430,203 @@ classdef PROLITH
             end
             self.sim_engine.SingleRunAsynchronous();
         end
+        
+        assignin('caller', inputname(1), self)
     end
 
     function self = run(self)
-		%run()
-		%Run simulation syncronously
-		
+        % run()
+        % Run simulation syncronously
+        
         try
             self.sim_engine.RunSimSet();
-        catch Exception                        
+        catch Exception                 
             if isempty(regexp(Exception.message, 'SimulationRun: No simulation set inputs have been specified.  AddInput must be called first.','once'))
                 rethrow(Exception)
             end
             self.sim_engine.SingleRun();
         end
+        
+        assignin('caller', inputname(1), self)
     end
     
-    function data = get_data(self, metro_plane, ID)
-		%data = get_data(metro_plane, ID)
-        %Returns data from the last run simulation
-		%
-		%metro_plane - string
-		%Name of metrology plane
-		%
-		%ID - integer
-		%PROLITH output ID for desired output 
+    function data = get_data(self, metro_plane, output)
+        % data = get_data(metro_plane, ID)
+        % Returns data from the last run simulation
+        % 
+        % metro_plane - string
+        % Name of metrology plane
+        % 
+        % output - integer
+        % PROLITH output output for desired output 
         
         num_sim = self.sim_engine.NumResultsRecords;
 
         if num_sim > 0
-            data = zeros(num_sim-1,1);
+            data = zeros(num_sim,1);
             
-            for i=0:num_sim-1
-                data(i+1) = self.sim_engine.GetMetrologyPlaneSimSetResult(metro_plane, ID, i);
+            try
+                for i=1:num_sim
+                    data(i) = self.sim_engine.GetMetrologyPlaneSimSetResult(metro_plane, output, i-1);
+                end
+            catch Exception
+                if ~strcmp(Exception.identifier,'MATLAB:UnableToConvert')
+                    rethrow(Exception)
+                end
+
+                data = {};
+                for i=1:num_sim
+                    data(i) = self.sim_engine.GetMetrologyPlaneSimSetResult(metro_plane, output, i-1);
+                end
             end
         else
-            data = self.sim_engine.GetMetrologyPlaneSingleRunResult(metro_plane, ID);
+            data = self.sim_engine.GetMetrologyPlaneSingleRunResult(metro_plane, output);
         end
+    end
+
+    function data = get_diffraction(self, ID, varargin)
+        % data = get_diffraction(ID, pass*)
+        % Returns the diffraction pattern data
+        % 
+        % ID - integer
+        % PROLITH output ID for desired output 
+        %
+        % pass - integer (optional)
+        % Exposure pass
+
+        if ~isempty(varargin)
+            pass = varargin{1};
+        else
+            pass = 1;
+        end
+
+        num_sim = self.sim_engine.NumResultsRecords;
+
+        if num_sim > 0
+            data = cell(num_sim,1);
+            
+            for i=1:num_sim
+                val = invoke(self.sim_engine,'GetDiffractionPatternSimSetResult', ID, i-1);
+                data{i} = val;
+            end
+        else
+            data = self.sim_engine.GetDiffractionPatternSingleRunResult(pass, ID);
+        end
+
     end
    
     function self = close(self)
-       %closes PROLITH link
+       % closes PROLITH link
        
-       %close file
-       %self.document.Close();
-       
-       %set object status
+       % set object status
        self.status='CLOSED';
        
-       %release PROLITH objects
+       % release PROLITH objects
        delete(self.application);
+        
+       assignin('caller', inputname(1), self)
+    end
+
+    function generate_filter(self, x, amplitude, phase)
+        %  Write PROLITH .FIL file from arrays amplitude and phase.
+        %  x should be a pupil coordinate vector.
+
+        %  Create pupil coordinate grid and convert
+        %  phase function to degrees
+
+        persistent A
+        persistent P
+
+        if ~isempty(A) && ~isempty(P) && isequal(A, amplitude) & isequal(P, phase)
+            return
+        end
+
+        [X,Y] = meshgrid(x,x);
+        A = amplitude;
+        P = rad2deg(phase);
+
+        %  Add the header
+        rows = {};
+        rows{1} = '[Version]';
+        rows{2} = '15.0.1.15';
+        rows{3} = '';
+        rows{4} = '[Parameters]';
+        rows{5} = 'Wavefront ;Pupil Filter Name';
+        rows{6} = '1 ;0 = Radial Data, 1 = x,y Grid Data';
+        rows{7} = sprintf('% 0.9f ;Step Size (x-y grid only)', x(2)-x(1));
+        rows{8} = '[Data]';
+
+        %  Transform gridded arrays into vectors
+        X = reshape(X,[],1);
+        Y = reshape(Y,[],1);
+        A = reshape(A,[],1);
+        P = reshape(P,[],1);
+
+        %  Remove any points where both the amplitude function
+        %  and the phase function are equal to zero
+        X = X(A~=0 | P~=0);
+        Y = Y(A~=0 | P~=0);
+        temp = A(A~=0 | P~=0);
+        P = P(A~=0 | P~=0);
+        A = temp; 
+
+        %  Add each coordinate to the file
+        r=9;
+        for i=1:numel(X)
+            if ~isnan(P(i)) & ~isnan(A(i))
+                rows{r} = sprintf('% 0.3f\t% 0.3f\t% 0.3f\t% 0.3f', X(i), Y(i), P(i), A(i));
+                r = r+1;
+            end
+        end
+
+        %  Write out the file
+        filePath = fullfile(pwd, 'wavefront.FIL');
+        file  = fopen(filePath, 'w');
+        for r=1:numel(rows)
+            fprintf(file,'% s\n',rows{r});
+        end
+        fclose(file);
     end        
     
-    %-----------%
-    %| Setters |%
-    %-----------%
+    % -----------% 
+    % | Setters |% 
+    % -----------% 
+    function self = set.pupil_filter(self, value)
+        if ischar(value) && ~isempty(value)
+            self.img_system.LoadDatabasePupilFilter(value);
+            self.pupil_filter = value;
+        else
+            self.img_system.UnloadPupilFilter();
+            self.pupil_filter = '';
+        end
+        
+        assignin('caller', inputname(1), self)
+    end
+
     function self = set.focus(self, value)
-        self.focus.value = value;
         self.img_system.focus.value = value;
     end
         
     function self = set.wavelength(self, value)
-        self.wavelength.value = value;
         self.img_system.wavelength.value = value;
     end
     
-    function self = set.threshold(self, value)        
-        self.threshold.value = value;
-        invoke(self.sim_engine, 'SetInput', self.threshold.id, 0, value);
-    end   
+    function self = set.CRAO(self, value)
+        self.img_system.ChiefRayIncidentAngle.value = value;
+    end
+    
+    function self = set.NA(self, value)
+        self.img_system.NumericalAperture.value = value;
+    end
+    
+    function self = set.reduction(self, value)
+        self.img_system.ReductionRatio.value = value;
+    end
+    
+    %function self = set.threshold(self, value)        
+    %    self.threshold.value = value;
+    %    invoke(self.sim_engine, 'SetInput', self.threshold.id, 0, value);
+    %end   
         
     function self = set.mask_rotation(self,value)
         if islogical(value)
@@ -409,9 +663,27 @@ classdef PROLITH
         self.sim_engine.SetFinalState(step_num);
     end
 
-    %-----------%
-    %| Getters |%
-    %-----------%
+    function self = set.feature_width(self, value)
+        self.mask.FeatureWidth = value;
+    end
+
+    function self = set.pitch(self, value)
+        self.mask.Pitch = value;
+    end
+
+    function self = set.target_cd(self, value)        
+        metro_planes = self.document.GetMetrologyPlanes();
+        plane = metro_planes.GetMetrologyPlane(value{1});
+        plane.LithoTargetCD.Value = value{2};
+    end
+
+    function self = set.sim_region(self, value)
+        invoke(self.sim_engine, 'SimulationRegion', value);
+    end
+
+    % -----------% 
+    % | Getters |% 
+    % -----------% 
     function value = get.final_step(self)
         value = self.final_step;
     end
@@ -419,5 +691,52 @@ classdef PROLITH
     function value = get.mask_rotation(self)
        value = self.mask.IsRotated; 
     end
+        
+    function value = get.reduction(self)
+       value = self.img_system.ReductionRatio.value; 
+    end   
+    
+    function value = get.metrology_planes(self)
+        value = self.sim_engine.GetAllMetrologyPlanes();
+    end
+
+    function value = get.sim_region(self)    
+        value = self.sim_engine.SimulationRegion;
+    end
    end
+end
+
+function value = get_focus()
+    global img_system
+    value = img_system.focus.value;
+end
+
+function value = get_wavelength()
+    global img_system
+    value = img_system.wavelength.value;
+end
+
+function value = get_NA()
+    global img_system
+    value = img_system.NumericalAperture.value;
+end
+
+function value = get_CRAO()
+    global img_system
+    value = img_system.ChiefRayIncidentAngle.value;
+end
+
+function value = get_reduction()
+    global img_system
+    value = img_system.ReductionRatio.value;
+end
+
+function value = get_feature_width()
+    global mask
+    value = mask.FeatureWidth.value;
+end
+
+function value = get_pitch()
+    global mask
+    value = mask.Pitch.value;
 end

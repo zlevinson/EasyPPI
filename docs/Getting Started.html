@@ -1,0 +1,104 @@
+<html>
+	<head>
+		<style>
+			.code{
+				font-family: monospace;
+				background-color: #CCC;
+			}
+			.comment{
+				display:block;
+				font-style: italic;
+				color: #337733;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Getting Started</h1>
+		<a name="1"></a><h3>1. What is EasyPPI?</h3>
+		EasyPPI is a MATLAB toolbox which makes running and analyzing PROLITH lithography simulations easy. It is an object oriented wrapper for the ActiveX PROLITH Programming Interface (PPI).
+
+		<a name="2"></a><h3>2. Installation</h3>
+		<p>For MATLAB versions newer than R2014a, EasyPPI can be installed as a MATLAB toolbox via the file EasyPPI.mltbx. For earlier versions, all that is needed to install EasyPPI is to place the directory containing the EasyPPI source files on the MATLAB path. This can be accomplished by clicking on <b>Set Path</b> in the <i>Environment</i> section of the <i>Home</i> tab.</p>
+		<img src='matlab_home.png' /><br>
+		<p>On the <b>Set Path</b> dialog box, click on the <b>Add Folder</b> button and select the directory containing EasyPPI. Finally, click on the <b>Save</b> button to close the dialog box and save the path for future sessions.</p>
+		<img src='matlab_path.png' /><br>
+
+		<a name="3"></a><h3>3. Running a single simulation</h3>
+		There are four steps to running a single simulation with EasyPPI:
+		<ol>
+			<li>Open connection to PROLITH</li>
+			<li>Set simulation inputs, final step, and outputs</li>
+			<li>Run the simulation and get data</li>
+			<li>Close the connection to PROLITH</li>
+		</ol>
+		<br>
+		The following example code runs an aerial image simulation with a focus offset of 0.1 microns. The average NILS and aerial image intensity are returned as outputs.
+		<div class='code'>
+			<span class='comment'>% Instantiate EasyPPI and open PROLITH connection</span>
+			PPI = PROLITH();<br>
+			<br>
+			<span class='comment'>% Set the focus offset</span>
+			PPI.focus = 0.1;<br>
+			<span class='comment'>% Set final step to aerial image and add aerial image</span>
+			<span class='comment'>% intensity and NILS as outputs</span>
+			PPI.final_step = 'aerial image';<br>
+			PPI.add_output(PPI.aerial_image.intensity);<br>
+			PPI.add_output(PPI.aerial_image.nils.avg);<br>
+			<br>
+			<span class='comment'>% Run the simulation</span>
+			PPI = PPI.run();<br>
+			<br>
+			<span class='comment'>% Get the output data</span>
+			intensity = PPI.get_data('Y', PPI.aerial_image.intensity);<br>
+			NILS = PPI.get_data('Y', PPI.aerial_image.nils.avg);<br>
+			<br>
+			<span class='comment'>% Close the PROLITH connection</span>
+			PPI = PPI.close();
+		</div>
+		<a name="4"></a><h3>4. Running a simulation set</h3>
+		The steps to run a simulation set are very similar to those to run a single simulation. 
+		<ol>
+			<li>Open connection to PROLITH</li>
+			<li>Set simulation inputs parameters and outputs</li>
+			<li>Run the simulation and get data</li>
+			<li>Close the connection to PROLITH</li>
+		</ol>
+		<br>
+		Valid input parameters are listed <a href="API.html#1" target="content">here</a>, while valid output parameters are listed <a href="API.html#2" target="content">here</a>.<br>
+		The following example code runs an aerial image simulation set with focus starting at -0.5 microns, ending at +0.5 microns, with a step size of 0.1 microns. The average NILS and aerial image intensity are returned as outputs.
+		<div class='code'>
+			<span class='comment'>% Instantiate EasyPPI and open PROLITH connection</span>
+			PPI = PROLITH();<br>
+			PPI = PPI.open();<br>
+			<br>			
+			<span class='comment'>% Initialize focus array and add to PROLITH as a</span>
+			<span class='comment'>% simulation set input</span>
+			focus = -0.5:0.1:0.5;<br>
+			PPI.add_set_input(PPI.focus, [focus(1) focus(end) focus(2)-focus(1)]);<br>
+			<br>
+			<span class='comment'>% Add aerial image intensity and NILS as outputs</span>
+			PPI.add_output(PPI.aerial_image.intensity);<br>
+			PPI.add_output(PPI.aerial_image.nils.avg);<br>
+			<br>
+			<span class='comment'>% Run the simulation</span>
+			PPI = PPI.run();<br>
+			<br>
+			<span class='comment'>% Get the output data</span>
+			intensity = PPI.get_data('Y', PPI.aerial_image.intensity);<br>
+			NILS = PPI.get_data('Y', PPI.aerial_image.nils.avg);<br>
+			<br>
+			<span class='comment'>% Close the PROLITH connection</span>
+			PPI = PPI.close();<br>
+			<br>
+			<span class='comment'>% Get the aerial image coordinate array and initialize</span>
+			<span class='comment'>% the array for intensity</span>
+			profile_x = intensity{1}(1,:);<br>
+			I = zeros(numel(intensity), numel(profile_x));<br>
+			<br>
+			<span class='comment'>% Add aerial image intensities to the array</span>
+			for i=1:numel(intensity)<br>
+			&nbsp;I(i, 1:numel(profile_x)) = intensity{i}(2,:);<br>
+			end
+		</div>
+	</body>
+</html>

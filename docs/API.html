@@ -1,0 +1,339 @@
+<html>
+	<head>
+		<style>
+			h4{ 
+				display: inline;
+				color: #555;
+				font-family: monospace;
+				font-size: 12pt;
+			}
+			div{
+				margin: 0 0 25px 25px;
+			}
+      		a:visited{color: blue;}
+      		hr{
+  				position: relative;
+			    border: 0;
+			    height: 1px;
+			    background: #333;
+			    top: -15px;
+			}
+			.code{
+				font-family: monospace;
+				color: #555;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>API reference</h1>
+		<a name="1"></a><h3>1. List of input parameters</h3>
+			The following parameters are valid input parameters:
+			<ul>
+				<li>Wafer focus position&mdash;<span class='code'>PPI.focus</span></li>
+				<li>Imaging system wavelength&mdash;<span class='code'>PPI.wavelength</span></li>
+				<li>Imaging system numerical aperture&mdash;<span class='code'>PPI.NA</span></li>
+				<li>Imaging system chief ray angle at the objective&mdash;<span class='code'>PPI.CRAO</span></li>
+				<li>Imaging system reduction ratio&mdash;<span class='code'>PPI.reduction</span></li>
+				<li>Aerial image threshold&mdash;<span class='code'>PPI.threshold</span></li>
+				<li>Mask feature width&mdash;<span class='code'>PPI.feature_width</span></li>
+				<li>Mask pitch&mdash;<span class='code'>PPI.pitch</span></li>
+				<li>Source coherence&mdash;<span class='code'>PPI.source_radius</span></li>
+			</ul>
+    	<a name="2"></a><h3>2. List of output parameters</h3>
+    	<b>Diffraction Pattern&mdash;PPI.diffraction</b>
+    		<ul>
+    			<li>Amplitude
+    				<ul>
+    					<li>Input X polarized, Output X polarized&mdash;<span class='code'>PPI.diffraction.amplitude.xx</span></li>
+    					<li>Input X polarized, Output Y polarized&mdash;<span class='code'>PPI.diffraction.amplitude.xy</span></li>
+    					<li>Input Y polarized, Output X polarized&mdash;<span class='code'>PPI.diffraction.amplitude.yx</span></li>
+    					<li>Input Y polarized, Output Y polarized&mdash;<span class='code'>PPI.diffraction.amplitude.yy</span></li>
+    					<li>Kirchoff thin mask&mdash;<span class='code'>PPI.diffraction.amplitude.kirch</span></li>
+    				</ul>
+    			</li>
+    			<li>Phase
+    				<ul>
+    					<li>Input X polarized, Output X polarized&mdash;<span class='code'>PPI.diffraction.phase.xx</span></li>
+    					<li>Input X polarized, Output Y polarized&mdash;<span class='code'>PPI.diffraction.phase.xy</span></li>
+    					<li>Input Y polarized, Output X polarized&mdash;<span class='code'>PPI.diffraction.phase.yx</span></li>
+    					<li>Input Y polarized, Output Y polarized&mdash;<span class='code'>PPI.diffraction.phase.yy</span></li>
+    					<li>Kirchoff thin mask&mdash;<span class='code'>PPI.diffraction.phase.kirch</span></li>
+    				</ul>
+    			</li>
+    		</ul>
+
+    	<b>Aerial Image&mdash;PPI.aerial_image</b>
+    	<ul>
+    		<li>Contrast&mdash;<span class='code'>PPI.aerial_image.contrast</span></li>
+    		<li>Placement Error&mdash;<span class='code'>PPI.aerial_image.placement_error</span></li>
+    		<li>Intensity&mdash;<span class='code'>PPI.aerial_image.intensity</span></li>
+    		<li>NILS
+    			<ul>
+    				<li>Left NILS&mdash;<span class='code'>PPI.aerial_image.nils.left</span></li>
+    				<li>Right NILS&mdash;<span class='code'>PPI.aerial_image.nils.right</span></li>
+    				<li>Average NILS&mdash;<span class='code'>PPI.aerial_image.nils.avg</span></li>
+    			</ul>
+			</li>
+    	</ul>
+
+    	<a name="3"></a><h3>3. Function reference</h3>
+    	<ul>
+    		<li><a href="#connect">Connecting to PROLITH</a></li>
+    		<li><a href="#file">File Management</a></li>
+    		<li><a href="#settings">Simulation settings</a></li>
+    		<li><a href="#running">Simulation running</a></li>
+    		<li><a href="#data">Data retrieval</a></li>
+    		<li><a href="#misc">Miscellaneous</a></li>
+    	</ul>
+
+    	<!-- --------------------------------------------------------------------------------- !-->
+    	<a name="connect"></a><h3>Connecting to PROLITH</h3>
+    	<hr>
+    	<h4>PPI = PROLITH(server*)</h4>
+    	<div>
+	    	<span>Instantiates the EasyPPI object and opens the connection to PROLITH</span>
+    		<br><br>
+    		<i>Arguments:</i><br>
+    		<b>server* (string; optional)</b>&mdash;The address of the DCOM server to run PROLITH on
+    	</div>
+
+	    <h4>PPI = PPI.open()</h4>
+	    <div>
+    		<span>Opens ActiveX PROLITH link</span>
+		</div>
+
+		<h4>PPI = PPI.close()</h4>
+		<div>
+				<span>Closes ActiveX PROLITH link</span>
+		</div>
+
+    	<h4>summary = PPI.get_summary()</h4>
+    	<div>
+			<span>Returns all PROLITH settings for current file as a string</span>
+		</div>
+    	
+    	<!-- --------------------------------------------------------------------------------- !-->
+    	<a name="file"></a><h3>File Management</h3>
+    	<hr>
+		<h4>PPI = PPI.new_file(path)</h4>
+		<div>
+			<span>Create a new PROLITH document at the specified path.</span>
+   			<br><br>
+   			<i>Arguments:</i><br>
+    		<b>path (string)</b>&mdash;The path to the new file
+    	</div>
+    
+		<h4>PPI = PPI.open_file(path)</h4>
+		<div>
+			<span>Open the PROLITH document at the specified path.</span>
+   			<br><br>
+   			<i>Arguments:</i><br>
+    		<b>path (string)</b>&mdash;The path to the new file
+    	</div>
+    
+    	<h4>PPI = PPI.close_file()</h4>
+    	<div>
+			<span>Closes the current PROLITH document.</span>
+		</div>
+    
+    	<h4>PPI = PPI.import(path, overwrite*)</h4>
+		<div>
+			<span>Imports a file at path into the PROLITH database.</span>
+			<br><br>
+			<i>Arguments:</i><br>
+    		<b>path (string)</b>&mdash;The path to the file to import<br>
+    		<b>overwrite (bool; optional)</b>&mdash;Specifies whether or not existing database entries should be overwritten (defaults to false)
+		</div>
+    	
+    	<!-- --------------------------------------------------------------------------------- !-->
+    	<a name="settings"></a><h3>Simulation Settings</h3>
+    	<hr>
+		<h4>PPI.rotate_mask()</h4>
+		<div>
+			<span>Rotate the current mask from the current state</span>
+		</div>
+
+		<h4>PPI.best_focus()</h4>
+		<div>
+        	<span>Get best focus from simulation set analysis tab</span><br>
+        	<span>Note: must run appropriate simulation set for this to be valid.</span>
+        </div>
+
+		<h4>PPI.depth_of_focus()</h4>
+		<div>
+        	<span>Get depth of focus from simulation set analysis tab</span>
+        	<span>Note: must run appropriate simulation set for this to be valid.</span>
+        </div>
+    
+   		<h4>PPI = PPI.set_source(shape_name, arg2)</h4>
+   		<div>
+    		<span>Set illuminator source shape</span>
+    		<br><br>
+    		<i>Arguments:</i><br>
+    		<b>shape_name (string)</b>&mdash;Accepted values:
+    			<ul>
+					<li>conventional</li>
+					<li>dipole</li>
+					<li>annular</li>
+					<li>quadrupole</li>
+					<li>Database source</li>
+				</ul>
+			
+			Dipole requires 'x' or 'y' orientation to be specified as the second argument<br>
+			Quadrupole requires 45 or 90 degree orientation to be specified as the second argument<br>
+			Database requires the name of the source to be specified as the second argument<br>
+		</div>
+
+	<h4>PPI = PPI.set_source_coherence(arg1, arg2*)</h4>
+	<div>
+		<span>Set the coherence of the current source.</span>
+		If source is a conventional partially coherent source, you must specify the degree of partial coherence (sigma)<br>
+		If source is a dipole, you must specify the center and radius<br>
+		If source is an annulus, you must supply the outer radius and inner radius<br>
+		If source is a quadrupole, you must supply the center and radius<br>
+	</div>
+
+	<h4>PPI.load_mask(mask_name, varargin*)</h4>
+    <div>
+	    <span>Load mask from PROLITH database</span>
+	    <br><br>
+	    <i>Arguments:</i><br>
+	    <b>mask_name (string)</b>&mdash; Mask name to load<br>
+	    <b>pass_num (integer; optional)</b>&mdash;Exposure pass (must be a value 1 through 5)<br>
+	    <b>dims (integer; optional)</b>&mdash;Number of mask dimensions (must be 2 or 3)<br>
+	    <b>load_sim_region (boolean; optional)</b>&mdash;Set to true to load the mask defined simulation region<br>
+	    <b>load_cse (boolean; optional)</b>&mdash;Set to true to load the mask defined CSE<br>
+    </div>
+
+	<h4>PPI.set_target_cd(metro_plane, target)</h4>
+	<div>
+		<span>Set the target CD for a metrology plane.</span>
+		<br><br>
+	    <i>Arguments:</i><br>
+	    <b>metro_plane (string)</b>&mdash;Metrology plane name<br>
+	    <b>target (float)</b>&mdash;Target CD value
+	</div>
+
+	<h4>PPI.add_aberration(index, value)</h4>
+    <div>
+    	<span>Add Zernike aberration to imaging system</span>    	
+		<br><br>
+	    <i>Arguments:</i><br>
+	    <b>index (integer)</b>&mdash;Index of Zernike polynomial<br>
+	    <b>value (float)</b>&mdash;Value (in waves) to set Zernike polynomial to
+	</div>
+
+	<h4>PPI.add_set_aberration(index, values)</h4>
+	<div>
+    	<span>Add Zernike aberration to simulation set</span>
+		<br><br>
+	    <i>Arguments:</i><br>
+	    <b>index (integer)</b>&mdash;Index of Zernike polynomial<br>
+    	<b>values (vector)</b>&mdash;Specifies the desired start, stop, and step values for the simulation set
+	</div>
+		
+	<h4>PPI.add_input(sim_input, values)</h4>
+    <div>
+    	<span>Add an input to a simulation set.</span>
+		<br><br>
+	    <i>Arguments:</i><br>        
+    	<b>sim_input (PPI_input object)</b>&mdash;PROLITH input for desired input<br>
+        <b>values (vector)</b>&mdash;Specifies the desired start, stop, and step values for the simulation set
+    </div>  
+
+	<h4>PPI.add_set_input(sim_input, values)</h4>
+	<div>
+	<b>This function is depricated! Please use add_input(sim_input, values) instead.</b>
+	<span>Add an input to a simulation set.</span>
+	<br><br>
+    <i>Arguments:</i><br>       
+	<b>sim_input (PPI_input object)</b>&mdash;PROLITH input for desired input<br>
+    <b>values (vector)</b>&mdash;Specifies the desired start, stop, and step values for the simulation set
+	</div>
+
+	<h4>PPI.target_cd_id(metro_plane)</h4>
+	<div>
+    <span>Get the target CD input ID from specified metrology plane</span>
+	<br><br>
+    <i>Arguments:</i><br>
+    <b>metro_plane (string)</b>&mdash;Name of metrology plane to use
+    </div>
+
+	<h4>PPI.couple_inputs(input_id, coupled_id)</h4>
+	<div>
+    <span>Couple two simulation set inputs</span>
+	<br><br>
+    <i>Arguments:</i><br>
+    <b>input_id (PPI_input object)</b>&mdash;PROLITH input object<br>
+    <b>coupled_id (PPI_input object)</b>&mdash;PROLITH input to couple to input_id
+    </div>
+
+	<h4>PPI.add_output(ID)</h4>
+	<div>
+		<span>Add an output to a simulation set</span>
+
+		<br><br>
+	    <i>Arguments:</i><br>
+		<b>ID (integer)</b>&mdash;PROLITH output ID for desired output
+	</div>
+	
+	<h4>PPI = PPI.clear_inputs()</h4>
+	<div>
+		<span>Remove all inputs from simulation set</span>
+	</div>
+
+	<h4>PPI = PPI.clear_outputs()</h4>
+	<div>
+		<span>Remove all outputs from simulation set</span>
+	</div>
+		
+	<!-- --------------------------------------------------------------------------------- !-->
+	<a name="running"></a><h3>Running Simulations</h3>
+	<hr>
+	<h4>PPI = PPI.run_async()</h4>
+	<div>
+    	<span>Run simulation asynchronously</span>
+	</div>
+
+	<h4>PPI = PPI.run()</h4>
+	<div>
+		<span>Run simulation syncronously</span>
+	</div>
+
+    <!-- --------------------------------------------------------------------------------- !-->
+	<a name="data"></a><h3>Data Retrieval</h3>
+	<hr>
+	<h4>data = PPI.get_data(metro_plane, output)</h4>
+	<div>
+        <span>Returns data from the last run simulation</span>
+		
+		<br><br>
+	    <i>Arguments:</i><br>
+		<b>metro_plane (string)</b>&mdash;Name of metrology plane<br>
+		<b>output (integer)</b>&mdash;PROLITH output ID for desired output 
+    </div>
+
+	<h4>data = PPI.get_diffraction(ID, pass*)</h4>
+    <div>
+        <span>Returns the diffraction pattern data</span>
+        
+		<br><br>
+	    <i>Arguments:</i><br>
+        <b>ID (integer)</b>&mdash;PROLITH output ID for desired output <br>
+        <b>pass (integer; optional)</b>&mdash;Exposure pass
+   </div>
+
+   	<!-- --------------------------------------------------------------------------------- !-->
+	<a name="misc"></a><h3>Miscellaneous</h3><hr>
+	<h4>PPI.generate_filter(x, amplitude, phase)</h4>
+	<div>
+		<span>Write PROLITH .FIL file from arrays amplitude and phase.</span>
+		<br><br>
+		<i>Arguments:</i><br>
+		<b>x (vector)</b>&mdash;Pupil coordinate vector<br>
+		<b>amplitude (matrix)</b>&mdash;Pupil amplitude function<br>
+		<b>phase (matrix)</b>&mdash;Pupil phase function
+	<div>
+	</body>
+</html>
