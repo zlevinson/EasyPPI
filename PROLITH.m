@@ -599,8 +599,6 @@ classdef PROLITH
             self.img_system.UnloadPupilFilter();
             self.pupil_filter = '';
         end
-        
-        assignin('caller', inputname(1), self)
     end
 
     function self = set.focus(self, value)
