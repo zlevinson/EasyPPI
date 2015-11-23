@@ -65,7 +65,7 @@ classdef PROLITH
         self = self.open();
     end
     
-    function self = open(self)
+    function varargout = open(self)
         % opens ActiveX PROLITH link
         
         % set object status
@@ -80,7 +80,11 @@ classdef PROLITH
         
         self = self.getLowLevelObjects();
 
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end       
     end
     
     function summary = get_summary(self)
@@ -89,7 +93,7 @@ classdef PROLITH
         summary = self.sim_engine.GetParameterSummaryString(); 
     end
     
-    function self = getLowLevelObjects(self)
+    function varargout = getLowLevelObjects(self)
         global img_system
         global sim_engine
         global mask
@@ -117,19 +121,27 @@ classdef PROLITH
         mask = self.mask;
         sim_engine = self.sim_engine;
 
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
-    function self = new_file(self, path)
+    function varargout = new_file(self, path)
         % new_file(path)
         % Create a new PROLITH document at the specified path.
         self.document = self.document.New();
         self = self.getLowLevelObjects();
 
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
-    function self = open_file(self, path)
+    function varargout = open_file(self, path)
         % open_file(path)
         % Open the PROLITH document at the specified path.
         if ~strcmp(self.document.path, path)
@@ -137,19 +149,27 @@ classdef PROLITH
             self = self.getLowLevelObjects();
         end
 
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
-    function self = close_file(self)
+    function varargout = close_file(self)
         % close_file()
         % Closes the current PROLITH document.
         self.document.Close();
         self = self.getLowLevelObjects();
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
-    function self = import(self,varargin)
+    function varargout = import(self,varargin)
         % import(path, overwrite)
         % Imports a file at path into the PROLITH database.
         % 
@@ -165,7 +185,11 @@ classdef PROLITH
         end
         self = self.getLowLevelObjects();
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
     function rotate_mask(self)      
@@ -195,7 +219,7 @@ classdef PROLITH
         value = self.sim_engine.get('DepthOfFocus');
     end
    
-    function self = set_source(self, varargin)
+    function varargout = set_source(self, varargin)
         % Set illuminator source shape
         % 
         % Shape Name - String
@@ -234,10 +258,14 @@ classdef PROLITH
            end 
         end
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end)
     end
     
-    function self = set_source_coherence(self, varargin)
+    function varargout = set_source_coherence(self, varargin)
         % Set the coherence of the current source.
         % 
         % If source is a conventional partially coherent source, you must specify the degree of partial coherence (sigma)
@@ -272,7 +300,11 @@ classdef PROLITH
             source.get('Radius').set('Value', varargin{2});
         end
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
 
     function load_mask(self, mask_name, varargin)
@@ -357,7 +389,7 @@ classdef PROLITH
             self.add_input(sim_input, values)
         end
     end
-    
+
     function id = target_cd_id(self, metro_plane)
         % target_cd_id(metro_plane)
         % Get input ID from target CD from specified metrology plane
@@ -386,7 +418,7 @@ classdef PROLITH
         self.sim_engine.AddOutput(output);
     end
 
-    function self = clear_inputs(self)
+    function varargout = clear_inputs(self)
         % clear_inputs()
         % Remove all inputs from simulation set
         
@@ -399,10 +431,14 @@ classdef PROLITH
             self = clear_inputs(self);
         end
         
-        assignin('caller', inputname(1), self)    
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end   
     end
     
-    function self = clear_outputs(self)  
+    function varargout = clear_outputs(self)  
         % clear_outputs()
         % Remove all outputs from simulation set
         
@@ -415,10 +451,14 @@ classdef PROLITH
             self = clear_outputs(self);
         end
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
-    function self = run_async(self)
+    function varargout = run_async(self)
         % run_async()
         % Run simulation asynchronously
         
@@ -431,10 +471,14 @@ classdef PROLITH
             self.sim_engine.SingleRunAsynchronous();
         end
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
 
-    function self = run(self)
+    function varargout = run(self)
         % run()
         % Run simulation syncronously
         
@@ -447,7 +491,11 @@ classdef PROLITH
             self.sim_engine.SingleRun();
         end
         
-        assignin('caller', inputname(1), self)
+        if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
     
     function data = get_data(self, metro_plane, output)
@@ -515,7 +563,7 @@ classdef PROLITH
 
     end
    
-    function self = close(self)
+    function varargout = close(self)
        % closes PROLITH link
        
        % set object status
@@ -524,7 +572,11 @@ classdef PROLITH
        % release PROLITH objects
        delete(self.application);
         
-       assignin('caller', inputname(1), self)
+       if nargout
+            varargout{1} = self;
+        else
+            assignin('caller', inputname(1), self)
+        end
     end
 
     function generate_filter(self, x, amplitude, phase)
