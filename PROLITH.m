@@ -262,7 +262,7 @@ classdef PROLITH
             varargout{1} = self;
         else
             assignin('caller', inputname(1), self)
-        end)
+        end
     end
     
     function varargout = set_source_coherence(self, varargin)
