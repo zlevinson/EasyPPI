@@ -11,6 +11,18 @@ classdef PPI_input
 		func;
 	end
 
+	methods(Static)
+		function [a, b] = check_inputs(a, b)
+			if strcmp(class(a), 'PPI_input')
+				a = a.value;
+			end
+
+			if strcmp(class(b), 'PPI_input')
+				b = b.value;
+			end
+		end
+	end
+
 	methods
 		function self = PPI_input(id, func)
 			% Class constructor
@@ -31,19 +43,13 @@ classdef PPI_input
 		% Operator overloading for all operators that make sense.
 		% We know that self.value will always be a scalar.
 		function v = plus(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value + b;
-			else
-				v = a + b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a+b;
 		end
 
 		function v = minus(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value - b;
-			else
-				v = a - b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a-b;
 		end
 
 		function v = uminus(a)
@@ -55,87 +61,63 @@ classdef PPI_input
 		end
 
 		function v = times(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value * b;
-			else
-				v = a * b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a*b;
 		end
 
 		function v = mtimes(a, b)
-			v = self.times(a, b);
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a*b;
 		end
 
 		function v = rdivide(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value / b;
-			else
-				v = a / b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a / b;
 		end
 
 		function v = mrdivide(a, b)
-			v = self.rdivide(a, b);
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a / b;
 		end
 
 		function v = power(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value ^ b;
-			else
-				v = a ^ b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a^b;
 		end
 
 		function v = mpower(a, b)
-			v = self.power(a, b);
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a^b;
 		end
 
-		function v = lt(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value < b;
-			else
-				v = a < b.value;
-			end
+		function v = lt(a, b)	
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a<b;
 		end
 
 		function v = gt(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value > b;
-			else
-				v = a > b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a>b;
 		end
 
 		function v = le(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value <= b;
-			else
-				v = a <= b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a<=b;
 		end
 
 		function v = ge(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value >= b;
-			else
-				v = a >= b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a>=b;
 		end
 
 		function v = ne(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value ~= b;
-			else
-				v = a ~= b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a~=b;
 		end
 
 		function v = eq(a, b)
-			if strcmp(class(a), 'PPI_input')
-				v = a.value == b;
-			else
-				v = a == b.value;
-			end
+			[a, b] = PPI_input.check_inputs(a, b);
+			v = a==b;
 		end
 	end
 end

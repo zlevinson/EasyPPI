@@ -82,7 +82,7 @@ classdef PROLITH
 
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end       
     end
@@ -123,7 +123,7 @@ classdef PROLITH
 
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -136,7 +136,7 @@ classdef PROLITH
 
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -151,7 +151,7 @@ classdef PROLITH
 
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -164,7 +164,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -187,7 +187,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -260,7 +260,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -287,14 +287,21 @@ classdef PROLITH
             
             inner_radius = source.get('InnerRadius');
             outer_radius = source.get('OuterRadius');
+
+            outer_radius.set('Value', 0.99999);
+            inner_radius.set('Value', 0.0);
             
-            if inner_radius.get('Value') > varargin{1}
-                outer_radius.set('Value', varargin{1});
-                inner_radius.set('Value', varargin{2});         
-            else
-                inner_radius.set('Value', varargin{2});                         
-                outer_radius.set('Value', varargin{1});
-            end
+            % This might be broken:
+            %if inner_radius.get('Value') > varargin{1}
+            %    outer_radius.set('Value', varargin{1});
+            %    inner_radius.set('Value', varargin{2});         
+            %else
+            %    inner_radius.set('Value', varargin{2});                         
+            %    outer_radius.set('Value', varargin{1});
+            %end
+
+            inner_radius.set('Value', varargin{1});
+            outer_radius.set('Value', varargin{2});
         elseif strcmp(source_type,'quadrupole')
             source.get('Center').set('Value', varargin{1});
             source.get('Radius').set('Value', varargin{2});
@@ -302,7 +309,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -433,7 +440,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end   
     end
@@ -453,7 +460,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -473,7 +480,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -493,7 +500,7 @@ classdef PROLITH
         
         if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
@@ -574,7 +581,7 @@ classdef PROLITH
         
        if nargout
             varargout{1} = self;
-        else
+        elseif ~isempty(inputname(1))
             assignin('caller', inputname(1), self)
         end
     end
