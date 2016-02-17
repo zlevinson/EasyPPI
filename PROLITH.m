@@ -28,7 +28,8 @@ classdef PROLITH
        focus = PPI_input(29102, @get_focus);
        wavelength = PPI_input(29139, @get_wavelength);
        NA = PPI_input(29105, @get_NA);
-       CRAO = PPI_input(31319, @get_CRAO);
+       CRAO = PPI_input(31318, @get_CRAO);
+       azimuthal_angle = PPI_input(31319, @get_azimuthal);
        reduction = PPI_input(29141, @get_reduction);
        threshold = PPI_input(29116, @() NaN);
        feature_width = PPI_input(29996, @get_feature_width);
@@ -671,6 +672,10 @@ classdef PROLITH
     function self = set.CRAO(self, value)
         self.img_system.ChiefRayIncidentAngle.value = value;
     end
+
+    function self = set.azimuthal_angle(self, value)
+        self.img_system.ChiefRayAzimuthalAngle.value = value;
+    end
     
     function self = set.NA(self, value)
         self.img_system.NumericalAperture.value = value;
@@ -781,6 +786,11 @@ end
 function value = get_CRAO()
     global img_system
     value = img_system.ChiefRayIncidentAngle.value;
+end
+
+function value = get_azimuthal()
+    global img_system
+    value = img_system.ChiefRayAzimuthalAngle.value;
 end
 
 function value = get_reduction()
